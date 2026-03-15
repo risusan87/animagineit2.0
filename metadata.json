@@ -1,0 +1,5 @@
+{
+  "name": "AnimagineIt",
+  "description": "A high-quality anime image generator using tag-based prompting, optimized for Animagine XL style results.",
+  "requestFramePermissions": []
+}

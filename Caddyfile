@@ -1,0 +1,23 @@
+{$APP_HOST} {
+  header {
+    -Server
+  }
+
+  handle {
+    handle_path /api/* {
+      @missing_slash path_regexp noslash ^.+[^/]$
+      rewrite @missing_slash /api{uri}
+      rewrite /api{uri}
+      reverse_proxy backend:8000
+    }
+
+    handle_path /static/* {
+      root * /app/nonnative/staticfiles
+      file_server
+    }
+
+    handle {
+      reverse_proxy vite:80
+    }
+  }
+}

@@ -1,0 +1,24 @@
+services:
+  caddy:
+    image: caddy:latest
+    restart: always
+    environment:
+      - APP_HOST=${APP_HOST}
+    ports:
+        - "80:80"
+        - ${APP_PORT}:${APP_PORT}
+    volumes:
+        - ./Caddyfile:/etc/caddy/Caddyfile
+        - caddy_data:/data
+        - caddy_config:/config
+  vite:
+    build:
+      context: .
+
+  backend:
+    build:
+      context: ./backend
+
+volumes:
+  caddy_data:
+  caddy_config:

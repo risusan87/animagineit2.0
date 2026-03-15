@@ -6,6 +6,7 @@ AnimagineIt is a quick, simple and intuitive solution to self-host for inference
 Entire app is docker containerized. To build and run the container, use the following commands:
 
 ```bash
+$ cp .env.example .env
 $ docker-compose up --build
 ```
 
@@ -16,8 +17,6 @@ The configuration is fully managed inside the app.
 Navigate to the app and it will prompt you for every mandatory configuration parameter.
 
 ## Accelerators
-CUDA acceleration is most stable, but you can also use AMD ROCm or Apple Metal.
-NPU is currently out of scope, but may become for future development.
-
-If local accelerators are not available, alternatively you can provide Modal API key to use their cloud GPU services. They provide a free $30 monthly credit for every users. (A single batch of 10 image generation roughly cost around $0.03.)
+Local acceleration is currently not supported. The app relies on Modal's cloud GPU services for inference. 
+They provide a free $30 monthly credit for every users. (A single batch of 10 image generation roughly cost around $0.03.)
 Follow the app instructions to create an account and get your API key. Simple as that!

@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Anton", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-magenta-500: #d946ef;
+  --color-emerald-500: #10b981;
+
+  --animate-marquee: marquee 30s linear infinite;
+  --animate-glitch: glitch 0.3s cubic-bezier(.25,.46,.45,.94) both infinite;
+  --animate-scanline: scanline 8s linear infinite;
+
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  @keyframes glitch {
+    0% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+    100% { transform: translate(0); }
+  }
+
+  @keyframes chromatic {
+    0% { text-shadow: 2px 0 0 #ff00ff, -2px 0 0 #00ffff; }
+    25% { text-shadow: -2px 0 0 #ff00ff, 2px 0 0 #00ffff; }
+    50% { text-shadow: 2px 0 0 #ff00ff, -2px 0 0 #00ffff; }
+    75% { text-shadow: -2px 0 0 #ff00ff, 2px 0 0 #00ffff; }
+    100% { text-shadow: 2px 0 0 #ff00ff, -2px 0 0 #00ffff; }
+  }
+
+  @keyframes scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-[#020202] text-white overflow-x-hidden selection:bg-magenta-500 selection:text-white;
+  }
+}
+
+@layer utilities {
+  .brutal-border {
+    @apply border-2 border-white shadow-[4px_4px_0px_0px_rgba(255,255,255,1)];
+  }
+  
+  .brutal-shadow-emerald {
+    @apply shadow-[6px_6px_0px_0px_rgba(16,185,129,1)];
+  }
+
+  .brutal-shadow-magenta {
+    @apply shadow-[6px_6px_0px_0px_rgba(217,70,239,1)];
+  }
+
+  .chromatic-text {
+    animation: chromatic 0.2s infinite;
+  }
+
+  .glass-panel {
+    @apply bg-white/5 backdrop-blur-2xl border border-white/10;
+  }
+
+  .marquee-text {
+    @apply whitespace-nowrap animate-marquee;
+  }
+
+  .noise-bg {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    @apply opacity-[0.05] pointer-events-none fixed inset-0 z-[999];
+  }
+
+  .scanline {
+    @apply fixed inset-0 w-full h-1 bg-white/5 z-[1000] pointer-events-none animate-scanline;
+  }
+
+  .glitch-hover:hover {
+    @apply animate-glitch text-emerald-400;
+  }
+}
+
+/* Custom range input styling */
+input[type='range'] {
+  @apply appearance-none bg-white/10 h-1 rounded-none;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  @apply appearance-none w-6 h-6 bg-white cursor-pointer border-2 border-emerald-500;
+}
