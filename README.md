@@ -2,6 +2,9 @@
 
 AnimagineIt is a quick, simple and intuitive solution to self-host for inference of [animagine-xl-4.0](https://huggingface.co/cagliostrolab/animagine-xl-4.0), fine-tuned checkpoint of SDXL from Stability AI, for text-to-image generation.
 
+Made with Gemini at Google AI Studio:<br>
+https://ai.studio/apps/02d5d1bd-728e-4ef1-84d3-6f888c6a5c99
+
 ## Installation
 Easiest method is to use Docker.
 Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop/).
