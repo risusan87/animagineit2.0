@@ -3,14 +3,13 @@
 AnimagineIt is a quick, simple and intuitive solution to self-host for inference of [animagine-xl-4.0](https://huggingface.co/cagliostrolab/animagine-xl-4.0), fine-tuned checkpoint of SDXL from Stability AI, for text-to-image generation.
 
 ## Installation
-Entire app is docker containerized. To build and run the container, use the following commands:
+Easiest method is to use Docker.
+Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+For linux users, CLI only is available option if you prefer.
 
-```bash
-$ cp .env.example .env
-$ docker-compose up --build
-```
-
-The app will be available at `http://localhost:8501`.
+1. Copy environment variables: `$ cp .env.example .env`
+2. Run docker compose: `$ docker-compose up --build`
+3. Done! The app is available at http://localhost:8501
 
 ## Configuration
 The configuration is fully managed inside the app. 
