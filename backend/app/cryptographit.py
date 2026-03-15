@@ -34,6 +34,15 @@ class SymmetricCipherHelper:
             raise e
         
 class P2PEncryption:
+    """
+    Provides extra layer of encryption beyond https protocol.
+    Client and Server both must initialize this class (is_remote should be set to True for the server) then follow the protocol:
+    1. Server calls encryption_request(). Then sends the returning to the client.
+    2. Client then calls encryption_response() with the received data. Then sends the returning to the server.
+    3. Server then calls encryption_acknowledged() with the received data. If it returns True, the protocol is established and both sides can use self.cryptor to encrypt/decrypt data.
+    At this point, both sides have SymmeticCipherHelper instance in self.cryptor, which can be used to encrypt/decrypt data before transmissions over the network.
+    """
+
     def __init__(self, is_remote: bool):
         self._is_remote = is_remote
         if self._is_remote:

@@ -12,8 +12,8 @@ image = (
         "peft==0.17.1",
     ])
     .add_local_file(
-        "app/cruptographit.py",
-        remote_path="/root/encryption.py",
+        "app/cryptographit.py",
+        remote_path="/root/cryptographit.py",
     )
 )
 with image.imports():
@@ -86,7 +86,7 @@ class DiffusionModel:
     def setup(self):
         import os
         import json
-        from encryption import P2PEncryption
+        from cryptographit import P2PEncryption
         self.refiner = json.loads(self.refiner)
         self.upscaler = json.loads(self.upscaler)
         self.pipe = StableDiffusionXLPipeline.from_single_file(
