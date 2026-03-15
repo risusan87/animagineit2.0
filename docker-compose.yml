@@ -11,6 +11,20 @@ services:
         - ./Caddyfile:/etc/caddy/Caddyfile
         - caddy_data:/data
         - caddy_config:/config
+  
+  mariadb:
+    image: mariadb:latest
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
   vite:
     build:
       context: .
@@ -18,7 +32,15 @@ services:
   backend:
     build:
       context: ./backend
+    environment:
+      - DB_HOST=mariadb
+      - DB_USER=${MYSQL_USER}
+      - DB_PASSWORD=${MYSQL_PASSWORD}
+      - DB_NAME=${MYSQL_DATABASE}
+    volumes:
+      - ./backend/migrations:/app/migrations
 
 volumes:
   caddy_data:
   caddy_config:
+  db_data:

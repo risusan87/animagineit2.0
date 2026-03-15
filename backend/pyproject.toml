@@ -8,6 +8,9 @@ dependencies = [
     "uvicorn[standard]",
     "cryptography",
     "modal",
+    "aiomysql",
+    "sqlalchemy>=2.0",
+    "alembic",
 ]
 
 [build-system]
