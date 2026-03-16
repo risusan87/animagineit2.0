@@ -27,18 +27,25 @@ class ModalKeySetCommand(BaseModel):
 
 @v1_router.post("/config/modal-key")
 async def set_modal_key(config_data: ModalKeySetCommand, db: AsyncSession = Depends(get_db)):
-    modal_key = re.match(r"^ak-[a-zA-Z0-9]+$", config_data.value)
-    modal_secret = re.match(r"^as-[a-zA-Z0-9]+$", config_data.value)
-    if not modal_key or not modal_secret:
+    # Extract keys from the command string
+    modal_key_match = re.search(r"ak-[a-zA-Z0-9]+", config_data.value)
+    modal_secret_match = re.search(r"as-[a-zA-Z0-9]+", config_data.value)
+    
+    if not modal_key_match or not modal_secret_match:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid key format")
+    
+    modal_key = modal_key_match.group(0)
+    modal_secret = modal_secret_match.group(0)
+    
     modal_key_orm = await db.execute(
         select(AppConfiguration).where(AppConfiguration.key == "modal_key")
     ).scalar_one_or_none()
     modal_secret_orm = await db.execute(
         select(AppConfiguration).where(AppConfiguration.key == "modal_secret")
     ).scalar_one_or_none()
-    os.setenv("MODAL_TOKEN_ID", modal_key)
-    os.setenv("MODAL_TOKEN_SECRET", modal_secret)
+    
+    os.environ["MODAL_TOKEN_ID"] = modal_key
+    os.environ["MODAL_TOKEN_SECRET"] = modal_secret
     if not modal_key_orm:
         modal_key_orm = AppConfiguration(key="modal_key", value=modal_key)
         modal_secret_orm = AppConfiguration(key="modal_secret", value=modal_secret)

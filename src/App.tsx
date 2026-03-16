@@ -12,7 +12,9 @@ import {
   Sliders,
   Info,
   ServerCrash,
-  ShieldAlert
+  ShieldAlert,
+  Key,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -39,6 +41,9 @@ export default function App() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [modalKeyInput, setModalKeyInput] = useState('');
+  const [isSavingKey, setIsSavingKey] = useState(false);
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -64,6 +69,20 @@ export default function App() {
 
     setIsGenerating(true);
     setError(null);
+
+    try {
+      const configRes = await fetch('/api/v1/config/modal-key');
+      if (configRes.status === 404) {
+        setShowConfigModal(true);
+        setIsGenerating(false);
+        return;
+      }
+      if (!configRes.ok) throw new Error('Failed to check configuration');
+    } catch (err: any) {
+      setError('Connection error while checking configuration.');
+      setIsGenerating(false);
+      return;
+    }
 
     try {
       const response = await fetch('/api/v1/generate', {

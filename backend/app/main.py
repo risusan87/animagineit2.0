@@ -24,8 +24,8 @@ async def lifespan(app: FastAPI):
                     select(AppConfiguration).where(AppConfiguration.key == "modal_secret")
                 )).scalar_one_or_none()
                 if modal_token and modal_secret:
-                    os.setenv("MODAL_TOKEN_ID", modal_token.value)
-                    os.setenv("MODAL_TOKEN_SECRET", modal_secret.value)
+                    os.environ["MODAL_TOKEN_ID"] = modal_token.value
+                    os.environ["MODAL_TOKEN_SECRET"] = modal_secret.value
     yield
 
 app = FastAPI(
