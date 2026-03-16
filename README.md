@@ -1,5 +1,7 @@
 # AnimagineIt v2.0
 
+<img src="./uiofui.png" alt="App Screenshot" width="700">
+
 AnimagineIt is a quick, simple and intuitive solution to self-host for inference of [animagine-xl-4.0](https://huggingface.co/cagliostrolab/animagine-xl-4.0), fine-tuned checkpoint of SDXL from Stability AI, for text-to-image generation.
 
 Made with Gemini at Google AI Studio:<br>
