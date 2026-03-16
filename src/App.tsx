@@ -85,10 +85,17 @@ export default function App() {
     }
 
     try {
-      const response = await fetch('/api/v1/generate', {
+      const response = await fetch('/api/v1/inference', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
+        body: JSON.stringify({
+          prompt: params.prompt,
+          negative_prompt: params.negative_prompt,
+          num_inference_steps: params.num_inference_steps,
+          guidance_scale: params.guidance_scale,
+          num_images_per_prompt: 1,
+          images: 1
+        }),
       });
 
       const data = await response.json();
@@ -97,7 +104,14 @@ export default function App() {
         throw new Error(data.error || 'Failed to generate image');
       }
 
-      setGeneratedImage(data.image);
+      if (Array.isArray(data) && data.length > 0) {
+        setGeneratedImage(`data:image/png;base64,${data[0]}`);
+      } else if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+        // Fallback in case it's wrapped in an object
+        setGeneratedImage(`data:image/png;base64,${data.images[0]}`);
+      } else {
+        throw new Error('No image returned from server');
+      }
     } catch (err: any) {
       console.error('Generation error:', err);
       setError(err.message || 'An unexpected error occurred during generation.');
