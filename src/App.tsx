@@ -55,6 +55,7 @@ export default function App() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -181,6 +182,18 @@ export default function App() {
     link.href = image;
     link.download = `animagine-${Date.now()}.png`;
     link.click();
+  };
+
+  const showNextImage = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (selectedImageIndex === null) return;
+    setSelectedImageIndex((selectedImageIndex + 1) % generatedImages.length);
+  };
+
+  const showPrevImage = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (selectedImageIndex === null) return;
+    setSelectedImageIndex((selectedImageIndex - 1 + generatedImages.length) % generatedImages.length);
   };
 
   return (
@@ -410,6 +423,7 @@ export default function App() {
                           <Download className="w-4 h-4" />
                         </button>
                         <button 
+                          onClick={() => setSelectedImageIndex(index)}
                           className="p-2 bg-zinc-800 text-white rounded-xl hover:bg-zinc-700 transition-colors"
                           title="Maximize"
                         >
@@ -463,6 +477,69 @@ export default function App() {
           <span className="hover:text-indigo-400 cursor-pointer transition-colors">API</span>
         </div>
       </footer>
+
+      {/* Lightbox Modal */}
+      <AnimatePresence>
+        {selectedImageIndex !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-sm p-4 md:p-12"
+            onClick={() => setSelectedImageIndex(null)}
+          >
+            <motion.button
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-2xl text-white transition-colors z-50"
+              onClick={() => setSelectedImageIndex(null)}
+            >
+              <X className="w-6 h-6" />
+            </motion.button>
+
+            <button
+              className="absolute left-6 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors z-50 hidden md:block"
+              onClick={showPrevImage}
+            >
+              <RefreshCw className="w-6 h-6 -scale-x-100" />
+            </button>
+
+            <button
+              className="absolute right-6 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors z-50 hidden md:block"
+              onClick={showNextImage}
+            >
+              <RefreshCw className="w-6 h-6" />
+            </button>
+
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-full max-h-full flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={generatedImages[selectedImageIndex]}
+                alt={`Generated Anime Full ${selectedImageIndex + 1}`}
+                className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl"
+              />
+              
+              <div className="absolute bottom-[-4rem] left-1/2 -translate-x-1/2 flex items-center gap-6">
+                <button 
+                  onClick={() => handleDownload(generatedImages[selectedImageIndex])}
+                  className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all shadow-xl"
+                >
+                  <Download className="w-5 h-5" />
+                  Download Masterpiece
+                </button>
+                <div className="text-zinc-500 font-mono text-sm">
+                  {selectedImageIndex + 1} / {generatedImages.length}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Configuration Modal */}
       <AnimatePresence>
