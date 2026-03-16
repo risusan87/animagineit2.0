@@ -14,6 +14,7 @@ import {
   ServerCrash,
   ShieldAlert,
   Key,
+  HelpCircle,
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -27,7 +28,17 @@ interface GenerationParams {
   iterations: number;
   seed: string;
   aspect_ratio: "1:1" | "3:4" | "4:3" | "9:16" | "16:9";
+  scheduler: string;
 }
+
+const SCHEDULERS = [
+  { id: 'euler_ancestral', name: 'Euler A', info: 'Ancestral Euler sampler. Fast and produces high-quality results with a distinct "dreamy" feel. Often requires fewer steps.' },
+  { id: 'euler', name: 'Euler', info: 'Standard Euler sampler. Simple, reliable, and consistent. Good for general use.' },
+  { id: 'dpm++_2m_karras', name: 'DPM++ 2M Karras', info: 'A popular choice for high-quality results. Balanced speed and detail. Karras noise schedule helps with convergence.' },
+  { id: 'dpm++_sde_karras', name: 'DPM++ SDE Karras', info: 'Stochastic Differential Equation version of DPM++. Produces very high detail but can be slower and more "noisy" at low steps.' },
+  { id: 'unipc', name: 'UniPC', info: 'Unified Predictor-Corrector sampler. Very fast and stable, often producing good results in as few as 10-15 steps.' },
+  { id: 'ddim', name: 'DDIM', info: 'Denoising Diffusion Implicit Models. A classic sampler that is deterministic. Good for consistency.' },
+];
 
 export default function App() {
   const [params, setParams] = useState<GenerationParams>(() => {
@@ -40,6 +51,7 @@ export default function App() {
       iterations: 1,
       seed: '',
       aspect_ratio: '1:1' as const,
+      scheduler: 'euler_ancestral',
     };
 
     const saved = localStorage.getItem('animagine-params');
@@ -116,6 +128,7 @@ export default function App() {
           num_inference_steps: params.num_inference_steps,
           guidance_scale: params.guidance_scale,
           num_images_per_prompt: params.num_images_per_prompt,
+          scheduler: params.scheduler,
           images: params.iterations
         }),
       });
@@ -272,6 +285,36 @@ export default function App() {
                     }`}
                   >
                     {ratio}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-medium text-zinc-400">Scheduler</label>
+                <span className="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded uppercase">
+                  {SCHEDULERS.find(s => s.id === params.scheduler)?.name}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {SCHEDULERS.map((scheduler) => (
+                  <button
+                    key={scheduler.id}
+                    onClick={() => setParams({ ...params, scheduler: scheduler.id })}
+                    className={`py-2 px-3 text-[10px] font-bold rounded-lg border transition-all flex items-center justify-between group/btn ${
+                      params.scheduler === scheduler.id 
+                        ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' 
+                        : 'bg-black/40 border-white/5 text-zinc-500 hover:border-white/20'
+                    }`}
+                  >
+                    <span className="truncate">{scheduler.name}</span>
+                    <div 
+                      className="relative"
+                      title={scheduler.info}
+                    >
+                      <HelpCircle className="w-3 h-3 text-zinc-600 group-hover/btn:text-zinc-400 transition-colors" />
+                    </div>
                   </button>
                 ))}
               </div>
