@@ -75,6 +75,7 @@ class InferenceRequest(BaseModel):
     guidance_scale: float
     num_images_per_prompt: int
     images: int
+    scheduler: str
 
 @v1_router.post("/inference")
 async def inference(request: InferenceRequest, response: Response, db: AsyncSession = Depends(get_db)):
@@ -116,5 +117,4 @@ async def inference(request: InferenceRequest, response: Response, db: AsyncSess
         img_locations.append(location)
     response.status_code = status.HTTP_200_OK
     response.headers["Content-Type"] = "application/json"
-    print(img_locations)
     return img_locations

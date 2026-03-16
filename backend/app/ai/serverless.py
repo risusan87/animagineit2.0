@@ -134,30 +134,35 @@ class DiffusionModel:
                 self.pipe.scheduler.config,
                 use_karras_sigmas=True,
             )
+            print("Using Euler Ancestral Scheduler")
         elif scheduler_name == "euler":
             from diffusers import EulerDiscreteScheduler
             self.pipe.scheduler = EulerDiscreteScheduler.from_config(
                 self.pipe.scheduler.config,
                 use_karras_sigmas=True,
             )
+            print("Using Euler Scheduler")
         elif scheduler_name == "unipc":
             from diffusers import UniPCMultistepScheduler
             self.pipe.scheduler = UniPCMultistepScheduler.from_config(
                 self.pipe.scheduler.config,
                 use_karras_sigmas=True,
             )
+            print("Using UniPC Scheduler")
         elif scheduler_name == "ddim":
             from diffusers import DDIMScheduler
             self.pipe.scheduler = DDIMScheduler.from_config(
                 self.pipe.scheduler.config,
                 use_karras_sigmas=True,
             )
+            print("Using DDIM Scheduler")
         elif scheduler_name == "dpm++_2m_karras":
             from diffusers import DPMSolverMultistepScheduler
             self.pipe.scheduler = DPMSolverMultistepScheduler.from_config(
                 self.pipe.scheduler.config, 
                 use_karras_sigmas=True,
             )
+            print("Using DPM++ 2M Karras Scheduler")
         elif scheduler_name == "dpm++_sde_karras":
             from diffusers import DPMSolverMultistepScheduler
             self.pipe.scheduler = DPMSolverMultistepScheduler.from_config(
@@ -165,6 +170,7 @@ class DiffusionModel:
                 use_karras_sigmas=True, 
                 algorithm_type="sde-dpmsolver++"
             )
+            print("Using DPM++ SDE Karras Scheduler")
         if self.refiner != {}:
             pipe_args["output_type"] = "latent"
             pipe_args["denoising_end"] = self.refiner["high_noise_frac"]
