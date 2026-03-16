@@ -29,15 +29,29 @@ interface GenerationParams {
 }
 
 export default function App() {
-  const [params, setParams] = useState<GenerationParams>({
-    prompt: '1girl, solo, long hair, blue eyes, school uniform, cherry blossoms, masterpiece, high quality',
-    negative_prompt: 'low quality, blurry, distorted, ugly, bad anatomy, text, watermark',
-    guidance_scale: 7.0,
-    num_inference_steps: 28,
-    num_images_per_prompt: 1,
-    seed: '',
-    aspect_ratio: '1:1',
+  const [params, setParams] = useState<GenerationParams>(() => {
+    const saved = localStorage.getItem('animagine-params');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved params', e);
+      }
+    }
+    return {
+      prompt: '1girl, solo, long hair, blue eyes, school uniform, cherry blossoms, masterpiece, high quality',
+      negative_prompt: 'low quality, blurry, distorted, ugly, bad anatomy, text, watermark',
+      guidance_scale: 7.0,
+      num_inference_steps: 28,
+      num_images_per_prompt: 1,
+      seed: '',
+      aspect_ratio: '1:1',
+    };
   });
+
+  useEffect(() => {
+    localStorage.setItem('animagine-params', JSON.stringify(params));
+  }, [params]);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
