@@ -78,7 +78,7 @@ export default function App() {
   }, [params]);
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [generatedImages, setGeneratedImages] = useState<any[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
@@ -210,10 +210,27 @@ export default function App() {
       }
 
       if (Array.isArray(data) && data.length > 0) {
-        setGeneratedImages(data);
+        const formatted = data.map((url: string) => ({
+          location: url,
+          prompt: params.prompt,
+          negative_prompt: params.negative_prompt,
+          num_inference_steps: params.num_inference_steps,
+          guidance_scale: params.guidance_scale,
+          seed: params.seed,
+          scheduler: params.scheduler
+        }));
+        setGeneratedImages(formatted);
       } else if (data.images && Array.isArray(data.images) && data.images.length > 0) {
-        // Fallback in case it's wrapped in an object
-        setGeneratedImages(data.images);
+        const formatted = data.images.map((url: string) => ({
+          location: url,
+          prompt: params.prompt,
+          negative_prompt: params.negative_prompt,
+          num_inference_steps: params.num_inference_steps,
+          guidance_scale: params.guidance_scale,
+          seed: params.seed,
+          scheduler: params.scheduler
+        }));
+        setGeneratedImages(formatted);
       } else {
         throw new Error('No images returned from server');
       }
@@ -265,9 +282,11 @@ export default function App() {
     );
   }
 
-  const handleDownload = (image: string) => {
+  const handleDownload = (image: any) => {
+    const url = typeof image === 'string' ? image : (image.location || image.url || '');
+    if (!url) return;
     const link = document.createElement('a');
-    link.href = image;
+    link.href = url;
     link.download = `animagine-${Date.now()}.png`;
     link.click();
   };
@@ -631,38 +650,38 @@ export default function App() {
                   generatedImages.length <= 4 ? 'grid-cols-2' : 
                   'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
                 }`}>
-                  {generatedImages.map((img, index) => (
-                    <motion.div 
-                      key={index}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="relative group bg-white/5 rounded-2xl border border-white/10 overflow-hidden shadow-xl"
-                    >
-                      <img 
-                        src={img} 
-                        alt={`Generated Anime ${index + 1}`} 
-                        className="w-full h-auto object-contain"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <button 
-                          onClick={() => handleDownload(img)}
-                          className="p-2 bg-indigo-500 text-white rounded-xl hover:bg-indigo-400 transition-colors"
-                          title="Download"
+                      {generatedImages.map((img, index) => (
+                        <motion.div 
+                          key={index}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="relative group bg-white/5 rounded-2xl border border-white/10 overflow-hidden shadow-xl"
                         >
-                          <Download className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => setSelectedImageIndex(index)}
-                          className="p-2 bg-zinc-800 text-white rounded-xl hover:bg-zinc-700 transition-colors"
-                          title="Maximize"
-                        >
-                          <Maximize2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
+                          <img 
+                            src={img.location || img} 
+                            alt={`Generated Anime ${index + 1}`} 
+                            className="w-full h-auto object-contain"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button 
+                              onClick={() => handleDownload(img)}
+                              className="p-2 bg-indigo-500 text-white rounded-xl hover:bg-indigo-400 transition-colors"
+                              title="Download"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => setSelectedImageIndex(index)}
+                              className="p-2 bg-zinc-800 text-white rounded-xl hover:bg-zinc-700 transition-colors"
+                              title="Maximize"
+                            >
+                              <Maximize2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </motion.div>
+                      ))}
                 </div>
               </motion.div>
             ) : (
@@ -830,7 +849,7 @@ export default function App() {
                   className="group relative aspect-square bg-zinc-900 rounded-2xl overflow-hidden border border-white/5 hover:border-indigo-500/30 transition-all shadow-lg"
                 >
                   <img 
-                    src={img.url || img} 
+                    src={img.location || img.url || img} 
                     alt={img.prompt || 'Gallery Image'} 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     referrerPolicy="no-referrer"
@@ -842,7 +861,7 @@ export default function App() {
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => {
-                          setGeneratedImages(galleryImages.map(g => g.url || g));
+                          setGeneratedImages(galleryImages);
                           setSelectedImageIndex(idx);
                         }}
                         className="flex-1 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-2"
@@ -851,7 +870,7 @@ export default function App() {
                         View
                       </button>
                       <button 
-                        onClick={() => handleDownload(img.url || img)}
+                        onClick={() => handleDownload(img)}
                         className="p-2 bg-indigo-500 hover:bg-indigo-400 rounded-lg transition-all"
                       >
                         <Download className="w-3 h-3" />
@@ -925,26 +944,79 @@ export default function App() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="relative max-w-full max-h-full flex items-center justify-center"
+              className="relative max-w-full max-h-full flex flex-col lg:flex-row items-center gap-8"
               onClick={(e) => e.stopPropagation()}
             >
-              <img
-                src={generatedImages[selectedImageIndex]}
-                alt={`Generated Anime Full ${selectedImageIndex + 1}`}
-                className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl"
-                referrerPolicy="no-referrer"
-              />
-              
-              <div className="absolute bottom-[-4rem] left-1/2 -translate-x-1/2 flex items-center gap-6">
-                <button 
-                  onClick={() => handleDownload(generatedImages[selectedImageIndex])}
-                  className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold transition-all shadow-xl"
-                >
-                  <Download className="w-5 h-5" />
-                  Download Masterpiece
-                </button>
-                <div className="text-zinc-500 font-mono text-sm">
-                  {selectedImageIndex + 1} / {generatedImages.length}
+              <div className="relative group">
+                <img
+                  src={generatedImages[selectedImageIndex].location || generatedImages[selectedImageIndex]}
+                  alt={`Generated Anime Full ${selectedImageIndex + 1}`}
+                  className="max-w-full max-h-[70vh] md:max-h-[80vh] object-contain rounded-2xl shadow-2xl border border-white/10"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute bottom-4 right-4 flex items-center gap-2">
+                  <button 
+                    onClick={() => handleDownload(generatedImages[selectedImageIndex])}
+                    className="p-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all shadow-lg"
+                    title="Download Masterpiece"
+                  >
+                    <Download className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Metadata Panel */}
+              <div className="w-full lg:w-80 bg-zinc-900/80 backdrop-blur-md border border-white/10 rounded-3xl p-6 space-y-6 overflow-y-auto max-h-[80vh]">
+                <div className="space-y-2">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Prompt</h4>
+                  <p className="text-xs text-zinc-200 leading-relaxed italic">
+                    "{generatedImages[selectedImageIndex].prompt || 'N/A'}"
+                  </p>
+                </div>
+
+                {generatedImages[selectedImageIndex].negative_prompt && (
+                  <div className="space-y-2">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Negative Prompt</h4>
+                    <p className="text-[10px] text-zinc-400 leading-relaxed">
+                      {generatedImages[selectedImageIndex].negative_prompt}
+                    </p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Seed</h4>
+                    <p className="text-[10px] font-mono text-indigo-400 truncate">
+                      {generatedImages[selectedImageIndex].seed || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Sampler</h4>
+                    <p className="text-[10px] font-mono text-indigo-400">
+                      {generatedImages[selectedImageIndex].scheduler || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Steps</h4>
+                    <p className="text-[10px] font-mono text-indigo-400">
+                      {generatedImages[selectedImageIndex].num_inference_steps || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Scale</h4>
+                    <p className="text-[10px] font-mono text-indigo-400">
+                      {generatedImages[selectedImageIndex].guidance_scale || 'N/A'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-white/5 flex justify-between items-center">
+                  <div className="text-zinc-600 font-mono text-[10px]">
+                    {selectedImageIndex + 1} / {generatedImages.length}
+                  </div>
+                  <div className="px-2 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded text-[8px] font-bold text-indigo-400 uppercase tracking-tighter">
+                    Animagine XL 3.1
+                  </div>
                 </div>
               </div>
             </motion.div>
