@@ -23,6 +23,7 @@ interface GenerationParams {
   negative_prompt: string;
   guidance_scale: number;
   num_inference_steps: number;
+  num_images_per_prompt: number;
   seed: string;
   aspect_ratio: "1:1" | "3:4" | "4:3" | "9:16" | "16:9";
 }
@@ -33,12 +34,13 @@ export default function App() {
     negative_prompt: 'low quality, blurry, distorted, ugly, bad anatomy, text, watermark',
     guidance_scale: 7.0,
     num_inference_steps: 28,
+    num_images_per_prompt: 1,
     seed: '',
     aspect_ratio: '1:1',
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [backendStatus, setBackendStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -93,7 +95,7 @@ export default function App() {
           negative_prompt: params.negative_prompt,
           num_inference_steps: params.num_inference_steps,
           guidance_scale: params.guidance_scale,
-          num_images_per_prompt: 1,
+          num_images_per_prompt: params.num_images_per_prompt,
           images: 1
         }),
       });
@@ -105,12 +107,12 @@ export default function App() {
       }
 
       if (Array.isArray(data) && data.length > 0) {
-        setGeneratedImage(`data:image/png;base64,${data[0]}`);
+        setGeneratedImages(data.map((img: string) => `data:image/png;base64,${img}`));
       } else if (data.images && Array.isArray(data.images) && data.images.length > 0) {
         // Fallback in case it's wrapped in an object
-        setGeneratedImage(`data:image/png;base64,${data.images[0]}`);
+        setGeneratedImages(data.images.map((img: string) => `data:image/png;base64,${img}`));
       } else {
-        throw new Error('No image returned from server');
+        throw new Error('No images returned from server');
       }
     } catch (err: any) {
       console.error('Generation error:', err);
@@ -160,10 +162,9 @@ export default function App() {
     );
   }
 
-  const handleDownload = () => {
-    if (!generatedImage) return;
+  const handleDownload = (image: string) => {
     const link = document.createElement('a');
-    link.href = generatedImage;
+    link.href = image;
     link.download = `animagine-${Date.now()}.png`;
     link.click();
   };
@@ -282,6 +283,25 @@ export default function App() {
                   <span>40</span>
                 </div>
               </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-medium text-zinc-400">Batch Size</label>
+                  <span className="text-xs font-mono text-indigo-400">{params.num_images_per_prompt}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="1" max="20" step="1"
+                  value={params.num_images_per_prompt}
+                  onChange={(e) => setParams({ ...params, num_images_per_prompt: parseInt(e.target.value) })}
+                  className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                />
+                <div className="flex justify-between text-[10px] text-zinc-600 font-mono">
+                  <span>1</span>
+                  <span>10</span>
+                  <span>20</span>
+                </div>
+              </div>
             </div>
 
             <button
@@ -342,35 +362,48 @@ export default function App() {
                   <p className="text-zinc-500 text-xs italic">Applying anime aesthetic filters</p>
                 </div>
               </motion.div>
-            ) : generatedImage ? (
+            ) : generatedImages.length > 0 ? (
               <motion.div 
-                key="image"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="relative group w-full h-full flex items-center justify-center z-10"
+                key="images"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="w-full h-full overflow-y-auto custom-scrollbar z-10"
               >
-                <div className="relative p-2 bg-white/5 rounded-3xl border border-white/10 shadow-2xl">
-                  <img 
-                    src={generatedImage} 
-                    alt="Generated Anime" 
-                    className="max-w-full max-h-[75vh] rounded-2xl object-contain"
-                  />
-                  
-                  <div className="absolute top-6 right-6 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
-                    <button 
-                      onClick={handleDownload}
-                      className="p-3 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl hover:bg-indigo-500 hover:text-white transition-all shadow-xl"
-                      title="Download PNG"
+                <div className={`grid gap-4 ${
+                  generatedImages.length === 1 ? 'grid-cols-1' : 
+                  generatedImages.length <= 4 ? 'grid-cols-2' : 
+                  'grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
+                }`}>
+                  {generatedImages.map((img, index) => (
+                    <motion.div 
+                      key={index}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="relative group bg-white/5 rounded-2xl border border-white/10 overflow-hidden shadow-xl"
                     >
-                      <Download className="w-5 h-5" />
-                    </button>
-                    <button 
-                      className="p-3 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl hover:bg-zinc-800 transition-all shadow-xl"
-                      title="View Details"
-                    >
-                      <Maximize2 className="w-5 h-5" />
-                    </button>
-                  </div>
+                      <img 
+                        src={img} 
+                        alt={`Generated Anime ${index + 1}`} 
+                        className="w-full h-auto object-contain"
+                      />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <button 
+                          onClick={() => handleDownload(img)}
+                          className="p-2 bg-indigo-500 text-white rounded-xl hover:bg-indigo-400 transition-colors"
+                          title="Download"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                        <button 
+                          className="p-2 bg-zinc-800 text-white rounded-xl hover:bg-zinc-700 transition-colors"
+                          title="Maximize"
+                        >
+                          <Maximize2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
               </motion.div>
             ) : (
