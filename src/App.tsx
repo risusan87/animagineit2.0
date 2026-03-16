@@ -29,6 +29,7 @@ interface GenerationParams {
   seed: string;
   aspect_ratio: "1:1" | "3:4" | "4:3" | "9:16" | "16:9";
   scheduler: string;
+  mode: 'single' | 'multiple';
 }
 
 const SCHEDULERS = [
@@ -49,9 +50,10 @@ export default function App() {
       num_inference_steps: 28,
       num_images_per_prompt: 1,
       iterations: 1,
-      seed: '',
+      seed: '-1',
       aspect_ratio: '1:1' as const,
       scheduler: 'euler_ancestral',
+      mode: 'single' as const,
     };
 
     const saved = localStorage.getItem('animagine-params');
@@ -127,9 +129,10 @@ export default function App() {
           negative_prompt: params.negative_prompt,
           num_inference_steps: params.num_inference_steps,
           guidance_scale: params.guidance_scale,
-          num_images_per_prompt: params.num_images_per_prompt,
+          num_images_per_prompt: params.mode === 'single' ? 1 : params.num_images_per_prompt,
           scheduler: params.scheduler,
-          images: params.iterations
+          images: params.mode === 'single' ? 1 : params.iterations,
+          seed: params.mode === 'single' ? (params.seed === '' ? -1 : Number(params.seed)) : -1
         }),
       });
 
@@ -270,6 +273,27 @@ export default function App() {
 
             <div className="space-y-3">
               <div className="flex justify-between items-center">
+                <label className="text-xs font-medium text-zinc-400">Generation Mode</label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {(['single', 'multiple'] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setParams({ ...params, mode: m })}
+                    className={`py-2 text-[10px] font-bold rounded-lg border transition-all capitalize ${
+                      params.mode === m 
+                        ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' 
+                        : 'bg-black/40 border-white/5 text-zinc-500 hover:border-white/20'
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
                 <label className="text-xs font-medium text-zinc-400">Aspect Ratio</label>
                 <span className="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded uppercase">{params.aspect_ratio}</span>
               </div>
@@ -321,6 +345,67 @@ export default function App() {
             </div>
 
             <div className="space-y-4">
+              {params.mode === 'single' ? (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-medium text-zinc-400">Seed</label>
+                    <span className="text-[10px] font-mono text-zinc-500">(-1 for random)</span>
+                  </div>
+                  <input 
+                    type="text"
+                    value={params.seed}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '' || val === '-' || /^-?\d*$/.test(val)) {
+                        setParams({ ...params, seed: val });
+                      }
+                    }}
+                    placeholder="-1"
+                    className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-sm font-mono focus:outline-none focus:border-indigo-500/50 transition-all placeholder:text-zinc-700"
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-medium text-zinc-400">Batch Size</label>
+                      <span className="text-xs font-mono text-indigo-400">{params.num_images_per_prompt}</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="1" max="10" step="1"
+                      value={params.num_images_per_prompt}
+                      onChange={(e) => setParams({ ...params, num_images_per_prompt: parseInt(e.target.value) })}
+                      className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                    />
+                    <div className="flex justify-between text-[10px] text-zinc-600 font-mono">
+                      <span>1</span>
+                      <span>5</span>
+                      <span>10</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-medium text-zinc-400">Iterations</label>
+                      <span className="text-xs font-mono text-indigo-400">{params.iterations}</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="1" max="10" step="1"
+                      value={params.iterations}
+                      onChange={(e) => setParams({ ...params, iterations: parseInt(e.target.value) })}
+                      className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                    />
+                    <div className="flex justify-between text-[10px] text-zinc-600 font-mono">
+                      <span>1</span>
+                      <span>5</span>
+                      <span>10</span>
+                    </div>
+                  </div>
+                </>
+              )}
+
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <label className="text-xs font-medium text-zinc-400">Guidance Scale</label>
@@ -359,50 +444,19 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-medium text-zinc-400">Batch Size</label>
-                  <span className="text-xs font-mono text-indigo-400">{params.num_images_per_prompt}</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="1" max="10" step="1"
-                  value={params.num_images_per_prompt}
-                  onChange={(e) => setParams({ ...params, num_images_per_prompt: parseInt(e.target.value) })}
-                  className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                />
-                <div className="flex justify-between text-[10px] text-zinc-600 font-mono">
-                  <span>1</span>
-                  <span>5</span>
-                  <span>10</span>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-medium text-zinc-400">Iterations</label>
-                  <span className="text-xs font-mono text-indigo-400">{params.iterations}</span>
-                </div>
-                <input 
-                  type="range" 
-                  min="1" max="10" step="1"
-                  value={params.iterations}
-                  onChange={(e) => setParams({ ...params, iterations: parseInt(e.target.value) })}
-                  className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                />
-                <div className="flex justify-between text-[10px] text-zinc-600 font-mono">
-                  <span>1</span>
-                  <span>5</span>
-                  <span>10</span>
-                </div>
-              </div>
-
               <div className="pt-2 border-t border-white/5">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Total Images</span>
-                  <span className="text-sm font-bold text-white bg-indigo-500/20 px-3 py-1 rounded-lg border border-indigo-500/30">
-                    {params.num_images_per_prompt * params.iterations}
-                  </span>
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Total Generation</span>
+                    <span className="text-sm font-bold text-white bg-indigo-500/20 px-3 py-1 rounded-lg border border-indigo-500/30">
+                      {params.mode === 'single' ? 1 : params.num_images_per_prompt * params.iterations}
+                    </span>
+                  </div>
+                  {params.mode === 'multiple' && (
+                    <p className="text-[10px] text-zinc-500 text-right italic">
+                      Generating {params.num_images_per_prompt * params.iterations} images ({params.num_images_per_prompt} batch × {params.iterations} iterations)
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
