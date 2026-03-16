@@ -87,11 +87,21 @@ class DiffusionModel:
         import os
         import json
         from cryptographit import P2PEncryption
+        from diffusers import (
+            EulerAncestralDiscreteScheduler, 
+            DPMSolverMultistepScheduler, 
+            UniPCMultistepScheduler
+        )
         self.refiner = json.loads(self.refiner)
         self.upscaler = json.loads(self.upscaler)
         self.pipe = StableDiffusionXLPipeline.from_single_file(
             f"/sdxl/{self.model_name}.safetensors",
             torch_dtype=torch.float16,
+        )
+        self.pipe.scheduler = DPMSolverMultistepScheduler.from_config(
+            self.pipe.scheduler.config, 
+            use_karras_sigmas=True, 
+            algorithm_type="sde-dpmsolver++"
         )
         self.pipe.to("cuda")
         if not os.path.exists("/sdxl/loras"):
