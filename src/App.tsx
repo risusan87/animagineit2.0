@@ -383,6 +383,104 @@ export default function App() {
           <span className="hover:text-indigo-400 cursor-pointer transition-colors">API</span>
         </div>
       </footer>
+
+      {/* Configuration Modal */}
+      <AnimatePresence>
+        {showConfigModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowConfigModal(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md bg-zinc-900 border border-white/10 rounded-[2.5rem] p-8 shadow-2xl overflow-hidden"
+            >
+              {/* Decorative background */}
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+              
+              <div className="flex justify-between items-start mb-6">
+                <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl flex items-center justify-center border border-indigo-500/20">
+                  <Key className="w-6 h-6 text-indigo-400" />
+                </div>
+                <button 
+                  onClick={() => setShowConfigModal(false)}
+                  className="p-2 hover:bg-white/5 rounded-xl transition-colors text-zinc-500 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-2 mb-8">
+                <h3 className="text-xl font-bold text-white tracking-tight">Configure Modal Token</h3>
+                <div className="text-zinc-400 text-sm space-y-3 leading-relaxed">
+                  <p>To generate images, you need to link your Modal account:</p>
+                  <ol className="list-decimal list-inside space-y-1 ml-1 text-xs text-zinc-500">
+                    <li>Create an account at <a href="https://modal.com" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">modal.com</a></li>
+                    <li>Navigate to <span className="text-zinc-300">Settings &gt; API Tokens</span></li>
+                    <li>Click <span className="text-zinc-300">"New Token"</span> to generate credentials</li>
+                    <li>Copy the command provided (e.g., <code className="text-indigo-300/80 bg-indigo-500/5 px-1 rounded">modal token set ...</code>)</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 ml-1">Token Command</label>
+                  <input
+                    type="text"
+                    value={modalKeyInput}
+                    onChange={(e) => setModalKeyInput(e.target.value)}
+                    placeholder="modal token set --token-id ak-xxx --token-secret as-xxx"
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-xs font-mono focus:outline-none focus:border-indigo-500/50 transition-all placeholder:text-zinc-800"
+                  />
+                </div>
+
+                <button
+                  onClick={async () => {
+                    if (!modalKeyInput.trim()) return;
+                    setIsSavingKey(true);
+                    try {
+                      const res = await fetch('/api/v1/config/modal-key', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ value: modalKeyInput.trim() }),
+                      });
+                      if (res.ok) {
+                        setShowConfigModal(false);
+                        handleGenerate();
+                      } else {
+                        throw new Error('Failed to save token');
+                      }
+                    } catch (err) {
+                      alert('Error saving token. Please ensure the command is correct.');
+                    } finally {
+                      setIsSavingKey(false);
+                    }
+                  }}
+                  disabled={isSavingKey || !modalKeyInput.trim()}
+                  className="w-full py-4 bg-white text-black hover:bg-zinc-200 disabled:bg-zinc-800 disabled:text-zinc-600 font-bold rounded-2xl transition-all flex items-center justify-center gap-2"
+                >
+                  {isSavingKey ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    "Connect Account & Generate"
+                  )}
+                </button>
+                
+                <p className="text-[10px] text-center text-zinc-600">
+                  Paste the entire command starting with <code className="text-zinc-500">modal token set...</code>
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
