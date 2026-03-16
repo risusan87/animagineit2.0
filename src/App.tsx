@@ -15,6 +15,11 @@ import {
   ShieldAlert,
   Key,
   HelpCircle,
+  Search,
+  Filter,
+  LayoutGrid,
+  ChevronDown,
+  ChevronUp,
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -50,7 +55,7 @@ export default function App() {
       num_inference_steps: 28,
       num_images_per_prompt: 1,
       iterations: 1,
-      seed: '-1',
+      seed: Math.floor(Math.random() * 1000000).toString(),
       aspect_ratio: '1:1' as const,
       scheduler: 'euler_ancestral',
       mode: 'single' as const,
@@ -80,6 +85,7 @@ export default function App() {
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [modalKeyInput, setModalKeyInput] = useState('');
   const [isSavingKey, setIsSavingKey] = useState(false);
+  const [view, setView] = useState<'generate' | 'gallery'>('generate');
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -96,6 +102,67 @@ export default function App() {
     };
     checkStatus();
   }, []);
+  
+  // Gallery States
+  const [galleryImages, setGalleryImages] = useState<any[]>([]);
+  const [isFetchingGallery, setIsFetchingGallery] = useState(false);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [galleryFilters, setGalleryFilters] = useState({
+    prompt: '',
+    negative_prompt: '',
+    guidance_scale_min: '',
+    guidance_scale_max: '',
+    seed: '',
+    scheduler: '',
+    steps_min: '',
+    steps_max: '',
+  });
+
+  const fetchGallery = async () => {
+    setIsFetchingGallery(true);
+    try {
+      const queryParams = new URLSearchParams();
+      if (galleryFilters.prompt) queryParams.append('prompt', galleryFilters.prompt);
+      if (galleryFilters.negative_prompt) queryParams.append('negative_prompt', galleryFilters.negative_prompt);
+      if (galleryFilters.seed) queryParams.append('seed', galleryFilters.seed);
+      if (galleryFilters.scheduler) queryParams.append('scheduler', galleryFilters.scheduler);
+      
+      if (galleryFilters.guidance_scale_min || galleryFilters.guidance_scale_max) {
+        const min = galleryFilters.guidance_scale_min || '0';
+        const max = galleryFilters.guidance_scale_max || '20';
+        queryParams.append('guidance_scale', `${min},${max}`);
+      }
+      
+      if (galleryFilters.steps_min || galleryFilters.steps_max) {
+        const min = galleryFilters.steps_min || '1';
+        const max = galleryFilters.steps_max || '100';
+        queryParams.append('steps', `${min},${max}`);
+      }
+
+      const response = await fetch(`/api/v1/inference?${queryParams.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch gallery');
+      const data = await response.json();
+      setGalleryImages(data);
+    } catch (err) {
+      console.error('Gallery fetch error:', err);
+      setError('Failed to load gallery images.');
+    } finally {
+      setIsFetchingGallery(false);
+    }
+  };
+
+  useEffect(() => {
+    if (view === 'gallery') {
+      fetchGallery();
+    }
+  }, [view]);
+
+  const randomizeSeed = () => {
+    const array = new Uint32Array(2);
+    window.crypto.getRandomValues(array);
+    const bigInt = (BigInt(array[0]) << 32n) | BigInt(array[1]);
+    setParams({ ...params, seed: bigInt.toString() });
+  };
 
   const handleGenerate = async () => {
     if (!params.prompt.trim()) {
@@ -132,7 +199,7 @@ export default function App() {
           num_images_per_prompt: params.mode === 'single' ? 1 : params.num_images_per_prompt,
           scheduler: params.scheduler,
           images: params.mode === 'single' ? 1 : params.iterations,
-          seed: params.mode === 'single' ? (params.seed === '' ? -1 : Number(params.seed)) : -1
+          seed: params.mode === 'single' ? (params.seed === '' ? 0 : BigInt(params.seed).toString()) : -1
         }),
       });
 
@@ -228,6 +295,32 @@ export default function App() {
             </div>
             <h1 className="text-xl font-bold tracking-tight italic">AnimagineIt</h1>
           </div>
+          
+          <div className="flex items-center bg-zinc-900/50 p-1 rounded-xl border border-white/5">
+            <button 
+              onClick={() => setView('generate')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+                view === 'generate' 
+                  ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
+                  : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Generate
+            </button>
+            <button 
+              onClick={() => setView('gallery')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+                view === 'gallery' 
+                  ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
+                  : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              Gallery
+            </button>
+          </div>
+
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-2 text-xs text-zinc-500">
               <ShieldAlert className="w-3.5 h-3.5 text-emerald-500" />
@@ -237,7 +330,8 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-8">
+      {view === 'generate' ? (
+        <main className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-8">
         {/* Controls Sidebar */}
         <aside className="space-y-6">
           <section className="space-y-4 bg-zinc-900/40 p-6 rounded-3xl border border-white/5 backdrop-blur-sm">
@@ -349,18 +443,24 @@ export default function App() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <label className="text-xs font-medium text-zinc-400">Seed</label>
-                    <span className="text-[10px] font-mono text-zinc-500">(-1 for random)</span>
+                    <button 
+                      onClick={randomizeSeed}
+                      className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      Randomize
+                    </button>
                   </div>
                   <input 
                     type="text"
                     value={params.seed}
                     onChange={(e) => {
                       const val = e.target.value;
-                      if (val === '' || val === '-' || /^-?\d*$/.test(val)) {
+                      if (val === '' || /^\d*$/.test(val)) {
                         setParams({ ...params, seed: val });
                       }
                     }}
-                    placeholder="-1"
+                    placeholder="Enter seed..."
                     className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-sm font-mono focus:outline-none focus:border-indigo-500/50 transition-all placeholder:text-zinc-700"
                   />
                 </div>
@@ -593,6 +693,185 @@ export default function App() {
           </AnimatePresence>
         </div>
       </main>
+      ) : (
+        <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+          {/* Search Section */}
+          <section className="space-y-4">
+            <div className="flex gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                <input 
+                  type="text"
+                  placeholder="Search by prompt..."
+                  value={galleryFilters.prompt}
+                  onChange={(e) => setGalleryFilters({ ...galleryFilters, prompt: e.target.value })}
+                  onKeyDown={(e) => e.key === 'Enter' && fetchGallery()}
+                  className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-indigo-500/50 transition-all"
+                />
+              </div>
+              <button 
+                onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+                className={`px-6 rounded-2xl border transition-all flex items-center gap-2 text-sm font-medium ${
+                  showAdvancedSearch 
+                    ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' 
+                    : 'bg-zinc-900/50 border-white/10 text-zinc-400 hover:bg-zinc-800'
+                }`}
+              >
+                <Filter className="w-4 h-4" />
+                Advanced
+                {showAdvancedSearch ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+              <button 
+                onClick={fetchGallery}
+                className="px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-500/20"
+              >
+                Search
+              </button>
+            </div>
+
+            <AnimatePresence>
+              {showAdvancedSearch && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-6 bg-zinc-900/30 rounded-3xl border border-white/5 backdrop-blur-sm">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Negative Prompt</label>
+                      <input 
+                        type="text"
+                        value={galleryFilters.negative_prompt}
+                        onChange={(e) => setGalleryFilters({ ...galleryFilters, negative_prompt: e.target.value })}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs focus:outline-none focus:border-indigo-500/50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Guidance Scale (Min,Max)</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="number"
+                          placeholder="Min"
+                          value={galleryFilters.guidance_scale_min}
+                          onChange={(e) => setGalleryFilters({ ...galleryFilters, guidance_scale_min: e.target.value })}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs focus:outline-none focus:border-indigo-500/50"
+                        />
+                        <input 
+                          type="number"
+                          placeholder="Max"
+                          value={galleryFilters.guidance_scale_max}
+                          onChange={(e) => setGalleryFilters({ ...galleryFilters, guidance_scale_max: e.target.value })}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs focus:outline-none focus:border-indigo-500/50"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Steps (Min,Max)</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="number"
+                          placeholder="Min"
+                          value={galleryFilters.steps_min}
+                          onChange={(e) => setGalleryFilters({ ...galleryFilters, steps_min: e.target.value })}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs focus:outline-none focus:border-indigo-500/50"
+                        />
+                        <input 
+                          type="number"
+                          placeholder="Max"
+                          value={galleryFilters.steps_max}
+                          onChange={(e) => setGalleryFilters({ ...galleryFilters, steps_max: e.target.value })}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs focus:outline-none focus:border-indigo-500/50"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Seed</label>
+                      <input 
+                        type="text"
+                        value={galleryFilters.seed}
+                        onChange={(e) => setGalleryFilters({ ...galleryFilters, seed: e.target.value })}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs focus:outline-none focus:border-indigo-500/50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Scheduler</label>
+                      <select 
+                        value={galleryFilters.scheduler}
+                        onChange={(e) => setGalleryFilters({ ...galleryFilters, scheduler: e.target.value })}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs focus:outline-none focus:border-indigo-500/50 appearance-none"
+                      >
+                        <option value="">All Schedulers</option>
+                        {SCHEDULERS.map(s => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </section>
+
+          {/* Gallery Grid */}
+          {isFetchingGallery ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+              <p className="text-zinc-500 text-sm">Fetching gallery...</p>
+            </div>
+          ) : galleryImages.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {galleryImages.map((img, idx) => (
+                <motion.div 
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="group relative aspect-square bg-zinc-900 rounded-2xl overflow-hidden border border-white/5 hover:border-indigo-500/30 transition-all shadow-lg"
+                >
+                  <img 
+                    src={img.url || img} 
+                    alt={img.prompt || 'Gallery Image'} 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end gap-3">
+                    <p className="text-[10px] text-zinc-300 line-clamp-3 leading-relaxed italic">
+                      "{img.prompt || 'No prompt'}"
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => {
+                          setGeneratedImages(galleryImages.map(g => g.url || g));
+                          setSelectedImageIndex(idx);
+                        }}
+                        className="flex-1 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-2"
+                      >
+                        <Maximize2 className="w-3 h-3" />
+                        View
+                      </button>
+                      <button 
+                        onClick={() => handleDownload(img.url || img)}
+                        className="p-2 bg-indigo-500 hover:bg-indigo-400 rounded-lg transition-all"
+                      >
+                        <Download className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 gap-4 bg-zinc-900/20 rounded-[3rem] border border-dashed border-white/5">
+              <LayoutGrid className="w-12 h-12 text-zinc-700" />
+              <div className="text-center">
+                <p className="text-zinc-400 font-medium">No images found</p>
+                <p className="text-zinc-600 text-xs mt-1">Try adjusting your search filters</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="max-w-7xl mx-auto px-6 py-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
