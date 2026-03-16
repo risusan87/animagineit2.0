@@ -24,29 +24,34 @@ interface GenerationParams {
   guidance_scale: number;
   num_inference_steps: number;
   num_images_per_prompt: number;
+  iterations: number;
   seed: string;
   aspect_ratio: "1:1" | "3:4" | "4:3" | "9:16" | "16:9";
 }
 
 export default function App() {
   const [params, setParams] = useState<GenerationParams>(() => {
-    const saved = localStorage.getItem('animagine-params');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Failed to parse saved params', e);
-      }
-    }
-    return {
+    const defaults = {
       prompt: '1girl, solo, long hair, blue eyes, school uniform, cherry blossoms, masterpiece, high quality',
       negative_prompt: 'low quality, blurry, distorted, ugly, bad anatomy, text, watermark',
       guidance_scale: 7.0,
       num_inference_steps: 28,
       num_images_per_prompt: 1,
+      iterations: 1,
       seed: '',
-      aspect_ratio: '1:1',
+      aspect_ratio: '1:1' as const,
     };
+
+    const saved = localStorage.getItem('animagine-params');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return { ...defaults, ...parsed };
+      } catch (e) {
+        console.error('Failed to parse saved params', e);
+      }
+    }
+    return defaults;
   });
 
   useEffect(() => {
@@ -111,7 +116,7 @@ export default function App() {
           num_inference_steps: params.num_inference_steps,
           guidance_scale: params.guidance_scale,
           num_images_per_prompt: params.num_images_per_prompt,
-          images: 1
+          images: params.iterations
         }),
       });
 
@@ -318,15 +323,43 @@ export default function App() {
                 </div>
                 <input 
                   type="range" 
-                  min="1" max="20" step="1"
+                  min="1" max="10" step="1"
                   value={params.num_images_per_prompt}
                   onChange={(e) => setParams({ ...params, num_images_per_prompt: parseInt(e.target.value) })}
                   className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                 />
                 <div className="flex justify-between text-[10px] text-zinc-600 font-mono">
                   <span>1</span>
+                  <span>5</span>
                   <span>10</span>
-                  <span>20</span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-medium text-zinc-400">Iterations</label>
+                  <span className="text-xs font-mono text-indigo-400">{params.iterations}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="1" max="10" step="1"
+                  value={params.iterations}
+                  onChange={(e) => setParams({ ...params, iterations: parseInt(e.target.value) })}
+                  className="w-full h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                />
+                <div className="flex justify-between text-[10px] text-zinc-600 font-mono">
+                  <span>1</span>
+                  <span>5</span>
+                  <span>10</span>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-white/5">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Total Images</span>
+                  <span className="text-sm font-bold text-white bg-indigo-500/20 px-3 py-1 rounded-lg border border-indigo-500/30">
+                    {params.num_images_per_prompt * params.iterations}
+                  </span>
                 </div>
               </div>
             </div>
@@ -469,7 +502,7 @@ export default function App() {
           <div className="w-6 h-6 bg-zinc-800 rounded flex items-center justify-center">
             <Sparkles className="w-3 h-3" />
           </div>
-          <span>AnimagineIt v1.0 • Powered by Backend Engine</span>
+          <span>AnimagineIt v2.0 • Powered by Backend Engine</span>
         </div>
         <div className="flex gap-8 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">
           <span className="hover:text-indigo-400 cursor-pointer transition-colors">Gallery</span>
