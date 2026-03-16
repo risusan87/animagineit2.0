@@ -5,6 +5,7 @@ import io
 import base64
 from pydantic import BaseModel
 import json
+from typing import Optional
 
 from fastapi import APIRouter, status, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +13,7 @@ from sqlalchemy import select
 import modal
 
 from app.database import get_db
-from app.database.models import AppConfiguration
+from app.database.models import AppConfiguration, Inference
 from app.database.minio import storage
 from app.ai.serverless import app
 from app.cryptographit import P2PEncryption
@@ -79,6 +80,21 @@ class InferenceRequest(BaseModel):
 
 @v1_router.post("/inference")
 async def inference(request: InferenceRequest, response: Response, db: AsyncSession = Depends(get_db)):
+    blob_ids = []
+    for _ in range(request.images * request.num_images_per_prompt):
+        inference_record = Inference(
+            status="accepted",
+            location=None,
+            prompt=request.prompt,
+            negative_prompt=request.negative_prompt,
+            num_inference_steps=request.num_inference_steps,
+            guidance_scale=request.guidance_scale,
+            seed=None,
+            scheduler=request.scheduler,
+        )
+        blob_ids.append(inference_record.blob_id)
+        db.add(inference_record)
+    await db.commit()
     await app.deploy.aio()
     DiffusionModel = modal.Cls.from_name("animagineit", "DiffusionModel")
     # Addons to the model
@@ -111,10 +127,61 @@ async def inference(request: InferenceRequest, response: Response, db: AsyncSess
     encrypted_images = await diffusion.generate.remote.aio(encrypted_args)
     images = json.loads(cipher.cryptor.decrypt(encrypted_images).decode('utf-8'))
     img_locations = []
-    for img_str in images["img"]:
-        image = io.BytesIO(base64.b64decode(img_str))
-        location = storage.upload_image(image.getvalue(), f"{os.urandom(4).hex()}.png")
+    reserved_inferences = (await db.execute(
+        select(Inference).where(Inference.blob_id.in_(blob_ids))
+    )).scalars().all()
+    for inference, img in zip(reserved_inferences, images["images"]):
+        image = io.BytesIO(base64.b64decode(img["img"]))
+        location = storage.upload_image(image.getvalue(), f"{inference.blob_id}.png")
         img_locations.append(location)
+        inference.status = "completed"
+        inference.location = location
+        inference.seed = img["seed"]
+    await db.commit()
     response.status_code = status.HTTP_200_OK
     response.headers["Content-Type"] = "application/json"
     return img_locations
+
+@v1_router.get("/inference")
+async def get_inference_results(
+    blob_id: Optional[str] = None, 
+    prompt: Optional[str] = None,
+    negative_prompt: Optional[str] = None,
+    guidance_scale: Optional[str] = None,
+    seed: Optional[str] = None,
+    scheduler: Optional[str] = None,
+    steps: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(Inference).where(Inference.status == "completed")
+    if blob_id:
+        stmt = stmt.where(Inference.blob_id == blob_id)
+    if prompt:
+        stmt = stmt.where(Inference.prompt.in_(prompt))
+    if negative_prompt:
+        stmt = stmt.where(Inference.negative_prompt.in_(negative_prompt))
+    if guidance_scale:
+        min_guidance, max_guidance = map(float, guidance_scale.split(","))
+        stmt = stmt.where(Inference.guidance_scale >= min_guidance, Inference.guidance_scale <= max_guidance)
+    if seed:
+        min_seed, max_seed = map(int, seed.split(","))
+        stmt = stmt.where(Inference.seed >= min_seed, Inference.seed <= max_seed)
+    if scheduler:
+        stmt = stmt.where(Inference.scheduler == scheduler)
+    if steps:
+        min_steps, max_steps = map(int, steps.split(","))
+        stmt = stmt.where(Inference.num_inference_steps >= min_steps, Inference.num_inference_steps <= max_steps)
+    result = await db.execute(stmt)
+    inferences = result.scalars().all()
+    return [
+        {
+            "location": inference.location,
+            "prompt": inference.prompt,
+            "negative_prompt": inference.negative_prompt,
+            "num_inference_steps": inference.num_inference_steps,
+            "guidance_scale": inference.guidance_scale,
+            "seed": inference.seed,
+            "scheduler": inference.scheduler,
+        }
+        for inference in inferences
+    ]
