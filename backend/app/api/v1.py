@@ -85,6 +85,7 @@ async def inference(request: InferenceRequest, response: Response, db: AsyncSess
         inference_record = Inference(
             status="accepted",
             location=None,
+            blob_id=os.urandom(8).hex(),
             prompt=request.prompt,
             negative_prompt=request.negative_prompt,
             num_inference_steps=request.num_inference_steps,
@@ -157,9 +158,9 @@ async def get_inference_results(
     if blob_id:
         stmt = stmt.where(Inference.blob_id == blob_id)
     if prompt:
-        stmt = stmt.where(Inference.prompt.in_(prompt))
+        stmt = stmt.where(Inference.prompt.ilike(f"%{prompt}%"))
     if negative_prompt:
-        stmt = stmt.where(Inference.negative_prompt.in_(negative_prompt))
+        stmt = stmt.where(Inference.negative_prompt.ilike(f"%{negative_prompt}%"))
     if guidance_scale:
         min_guidance, max_guidance = map(float, guidance_scale.split(","))
         stmt = stmt.where(Inference.guidance_scale >= min_guidance, Inference.guidance_scale <= max_guidance)
