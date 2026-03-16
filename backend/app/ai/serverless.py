@@ -127,6 +127,44 @@ class DiffusionModel:
         import base64
         pipe_args: dict = self.decrypt(pipe_args)
         img_iterate = pipe_args.pop("images", 1)
+        scheduler_name = pipe_args.pop("scheduler", "").lower()
+        if scheduler_name == "euler_ancestral":
+            from diffusers import EulerAncestralDiscreteScheduler
+            self.pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(
+                self.pipe.scheduler.config,
+                use_karras_sigmas=True,
+            )
+        elif scheduler_name == "euler":
+            from diffusers import EulerDiscreteScheduler
+            self.pipe.scheduler = EulerDiscreteScheduler.from_config(
+                self.pipe.scheduler.config,
+                use_karras_sigmas=True,
+            )
+        elif scheduler_name == "unipc":
+            from diffusers import UniPCMultistepScheduler
+            self.pipe.scheduler = UniPCMultistepScheduler.from_config(
+                self.pipe.scheduler.config,
+                use_karras_sigmas=True,
+            )
+        elif scheduler_name == "ddim":
+            from diffusers import DDIMScheduler
+            self.pipe.scheduler = DDIMScheduler.from_config(
+                self.pipe.scheduler.config,
+                use_karras_sigmas=True,
+            )
+        elif scheduler_name == "dpm++_2m_karras":
+            from diffusers import DPMSolverMultistepScheduler
+            self.pipe.scheduler = DPMSolverMultistepScheduler.from_config(
+                self.pipe.scheduler.config, 
+                use_karras_sigmas=True,
+            )
+        elif scheduler_name == "dpm++_sde_karras":
+            from diffusers import DPMSolverMultistepScheduler
+            self.pipe.scheduler = DPMSolverMultistepScheduler.from_config(
+                self.pipe.scheduler.config, 
+                use_karras_sigmas=True, 
+                algorithm_type="sde-dpmsolver++"
+            )
         if self.refiner != {}:
             pipe_args["output_type"] = "latent"
             pipe_args["denoising_end"] = self.refiner["high_noise_frac"]
