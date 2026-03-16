@@ -127,10 +127,10 @@ export default function App() {
       }
 
       if (Array.isArray(data) && data.length > 0) {
-        setGeneratedImages(data.map((img: string) => `data:image/png;base64,${img}`));
+        setGeneratedImages(data);
       } else if (data.images && Array.isArray(data.images) && data.images.length > 0) {
         // Fallback in case it's wrapped in an object
-        setGeneratedImages(data.images.map((img: string) => `data:image/png;base64,${img}`));
+        setGeneratedImages(data.images);
       } else {
         throw new Error('No images returned from server');
       }
@@ -446,6 +446,7 @@ export default function App() {
                         src={img} 
                         alt={`Generated Anime ${index + 1}`} 
                         className="w-full h-auto object-contain"
+                        referrerPolicy="no-referrer"
                       />
                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                         <button 
@@ -555,6 +556,7 @@ export default function App() {
                 src={generatedImages[selectedImageIndex]}
                 alt={`Generated Anime Full ${selectedImageIndex + 1}`}
                 className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl"
+                referrerPolicy="no-referrer"
               />
               
               <div className="absolute bottom-[-4rem] left-1/2 -translate-x-1/2 flex items-center gap-6">
