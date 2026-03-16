@@ -7,6 +7,8 @@ services:
     ports:
         - "80:80"
         - ${APP_PORT}:${APP_PORT}
+        - "9000:9000"
+        - "9001:9001"
     volumes:
         - ./Caddyfile:/etc/caddy/Caddyfile
         - caddy_data:/data
@@ -25,6 +27,33 @@ services:
     volumes:
       - db_data:/var/lib/mysql
 
+  minio:
+    image: minio/minio
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
+      /usr/bin/mc mb myminio/${MINIO_BUCKET_NAME} || true;
+      /usr/bin/mc anonymous set public myminio/${MINIO_BUCKET_NAME};
+      exit 0;
+      "
+
   vite:
     build:
       context: .
@@ -33,10 +62,14 @@ services:
     build:
       context: ./backend
     environment:
+      - SERVER_NAME=${SERVER_NAME}
       - DB_HOST=mariadb
       - DB_USER=${MYSQL_USER}
       - DB_PASSWORD=${MYSQL_PASSWORD}
       - DB_NAME=${MYSQL_DATABASE}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME}
     volumes:
       - ./backend/migrations:/app/migrations
 
@@ -44,3 +77,4 @@ volumes:
   caddy_data:
   caddy_config:
   db_data:
+  minio_data:

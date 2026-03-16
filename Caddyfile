@@ -21,3 +21,15 @@
     }
   }
 }
+
+:9000 {
+  handle {
+    reverse_proxy minio:9000
+  }
+}
+
+:9001 {
+  handle {
+    reverse_proxy minio:9001
+  }
+}

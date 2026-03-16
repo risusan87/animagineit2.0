@@ -1,6 +1,8 @@
 
 import os
 import re
+import io
+import base64
 from pydantic import BaseModel
 import json
 
@@ -11,6 +13,7 @@ import modal
 
 from app.database import get_db
 from app.database.models import AppConfiguration
+from app.database.minio import storage
 from app.ai.serverless import app
 from app.cryptographit import P2PEncryption
 
@@ -106,6 +109,12 @@ async def inference(request: InferenceRequest, response: Response, db: AsyncSess
     encrypted_args = cipher.cryptor.encrypt(request.model_dump_json().encode('utf-8'))
     encrypted_images = await diffusion.generate.remote.aio(encrypted_args)
     images = json.loads(cipher.cryptor.decrypt(encrypted_images).decode('utf-8'))
+    img_locations = []
+    for img_str in images["img"]:
+        image = io.BytesIO(base64.b64decode(img_str))
+        location = storage.upload_image(image.getvalue(), f"{os.urandom(4).hex()}.png")
+        img_locations.append(location)
     response.status_code = status.HTTP_200_OK
     response.headers["Content-Type"] = "application/json"
-    return images["img"]
+    print(img_locations)
+    return img_locations
