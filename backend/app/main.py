@@ -16,13 +16,13 @@ async def lifespan(app: FastAPI):
     if DATABASE_URL:
         db_ready = await wait_for_db(DATABASE_URL)
         if db_ready:
-            with SessionLocal() as db:
-                modal_token = db.execute(
+            async with SessionLocal() as db:
+                modal_token = (await db.execute(
                     select(AppConfiguration).where(AppConfiguration.key == "modal_key")
-                ).scalar_one_or_none()
-                modal_secret = db.execute(
+                )).scalar_one_or_none()
+                modal_secret = (await db.execute(
                     select(AppConfiguration).where(AppConfiguration.key == "modal_secret")
-                ).scalar_one_or_none()
+                )).scalar_one_or_none()
                 if modal_token and modal_secret:
                     os.setenv("MODAL_TOKEN_ID", modal_token.value)
                     os.setenv("MODAL_TOKEN_SECRET", modal_secret.value)
