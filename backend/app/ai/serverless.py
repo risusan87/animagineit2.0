@@ -181,9 +181,9 @@ class DiffusionModel:
             seeds = [seed if seed is not None else random.getrandbits(64)]
         else:
             seeds = [random.getrandbits(64) for _ in range(total_num_images)]
-        pipe_args["generator"] = [torch.Generator("cuda").manual_seed(s) for s in seeds]
         images = []
-        for _ in range(img_iterate):
+        for i in range(img_iterate):
+            pipe_args["generator"] = [torch.Generator("cuda").manual_seed(s) for s in seeds[i*pipe_args["num_images_per_prompt"]:(i+1)*pipe_args["num_images_per_prompt"]]]
             images_iter = self.pipe(**pipe_args).images
             images.extend(images_iter)
         if self.refiner != {}:

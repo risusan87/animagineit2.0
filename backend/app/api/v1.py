@@ -137,7 +137,7 @@ async def inference(request: InferenceRequest, response: Response, db: AsyncSess
         img_locations.append(location)
         inference.status = "completed"
         inference.location = location
-        inference.seed = img["seed"]
+        inference.seed = f"{img['seed']}"
     await db.commit()
     response.status_code = status.HTTP_200_OK
     response.headers["Content-Type"] = "application/json"
@@ -165,8 +165,7 @@ async def get_inference_results(
         min_guidance, max_guidance = map(float, guidance_scale.split(","))
         stmt = stmt.where(Inference.guidance_scale >= min_guidance, Inference.guidance_scale <= max_guidance)
     if seed:
-        min_seed, max_seed = map(int, seed.split(","))
-        stmt = stmt.where(Inference.seed >= min_seed, Inference.seed <= max_seed)
+        stmt = stmt.where(Inference.seed == seed)
     if scheduler:
         stmt = stmt.where(Inference.scheduler == scheduler)
     if steps:

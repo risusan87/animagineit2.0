@@ -18,5 +18,5 @@ class Inference(Base):
     negative_prompt: str = Column(String(1024), nullable=True)
     num_inference_steps: int = Column(Integer, nullable=True)
     guidance_scale: float = Column(Float, nullable=True)
-    seed: int = Column(Integer, nullable=True)
+    seed: int = Column(String(255), nullable=True)
     scheduler: str = Column(String(255), nullable=True)
