@@ -192,21 +192,27 @@ export default function App() {
     }
 
     try {
+      const requestBody: any = {
+        prompt: params.prompt,
+        negative_prompt: params.negative_prompt,
+        num_inference_steps: params.num_inference_steps,
+        guidance_scale: params.guidance_scale,
+        num_images_per_prompt: params.mode === 'single' ? 1 : params.num_images_per_prompt,
+        scheduler: params.scheduler,
+        width: params.width,
+        height: params.height,
+        images: params.mode === 'single' ? 1 : params.iterations,
+      };
+
+      if (params.mode === 'single') {
+        const seedValue = params.seed === '' ? 0 : parseInt(params.seed);
+        requestBody.seed = [seedValue];
+      }
+
       const response = await fetch('/api/v1/inference', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: params.prompt,
-          negative_prompt: params.negative_prompt,
-          num_inference_steps: params.num_inference_steps,
-          guidance_scale: params.guidance_scale,
-          num_images_per_prompt: params.mode === 'single' ? 1 : params.num_images_per_prompt,
-          scheduler: params.scheduler,
-          width: params.width,
-          height: params.height,
-          images: params.mode === 'single' ? 1 : params.iterations,
-          seed: params.mode === 'single' ? (params.seed === '' ? 0 : BigInt(params.seed).toString()) : -1
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
