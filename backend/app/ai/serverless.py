@@ -36,9 +36,13 @@ def download_safetensor(remote_safetensor_location: str, location: str=""):
         os.makedirs("/sdxl/refiners")
     if not os.path.exists("/sdxl/upscalers"):
         os.makedirs("/sdxl/upscalers")
+    volume_location = f"/sdxl/{location}" if location else "/sdxl"
     name = remote_safetensor_location.split("/")[-1]
+    if os.path.exists(f'{volume_location}/{name}'):
+        print(f"{name} already exists in volume, skipping download.")
+        return
     response = requests.get(remote_safetensor_location)
-    with open(f'/sdxl/{location}{"/" if location else ""}{name}', 'wb') as f:
+    with open(f'{volume_location}/{name}', 'wb') as f:
         f.write(response.content)
 
 @app.function(

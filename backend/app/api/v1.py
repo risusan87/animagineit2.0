@@ -100,6 +100,10 @@ async def inference(request: InferenceRequest, response: Response, db: AsyncSess
         db.add(inference_record)
     await db.commit()
     await app.deploy.aio()
+    download_safetensor = modal.Function.from_name("animagineit", "download_safetensor")
+    await download_safetensor.remote.aio(
+        remote_safetensor_location="https://huggingface.co/cagliostrolab/animagine-xl-4.0/resolve/main/animagine-xl-4.0-opt.safetensors"
+    )
     DiffusionModel = modal.Cls.from_name("animagineit", "DiffusionModel")
     # Addons to the model
     loras = [
