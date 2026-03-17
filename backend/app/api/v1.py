@@ -77,6 +77,9 @@ class InferenceRequest(BaseModel):
     num_images_per_prompt: int
     images: int
     scheduler: str
+    seed: Optional[list[int]] = None
+    width: int
+    height: int
 
 @v1_router.post("/inference")
 async def inference(request: InferenceRequest, response: Response, db: AsyncSession = Depends(get_db)):
