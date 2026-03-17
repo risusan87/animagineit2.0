@@ -122,7 +122,7 @@ class DiffusionModel:
         when fixed seed is desired, use "seed" with type integer instead of torch.Generator
         returning json contains PNG images encoded as base64 strings
         """
-        import random
+        import secrets
         import gc
         from io import BytesIO
         import base64
@@ -176,11 +176,10 @@ class DiffusionModel:
             pipe_args["output_type"] = "latent"
             pipe_args["denoising_end"] = self.refiner["high_noise_frac"]
         total_num_images = pipe_args["num_images_per_prompt"] * img_iterate
-        seed = pipe_args.pop("seed", None)
-        if total_num_images == 1:
-            seeds = [seed if seed is not None else random.getrandbits(64)]
-        else:
-            seeds = [random.getrandbits(64) for _ in range(total_num_images)]
+        if not (seeds := pipe_args.pop("seed")):
+            print("Generating")
+            seeds = [secrets.randbits(64) for _ in range(total_num_images)]
+        print("seeds:", seeds)
         images = []
         for i in range(img_iterate):
             pipe_args["generator"] = [torch.Generator("cuda").manual_seed(s) for s in seeds[i*pipe_args["num_images_per_prompt"]:(i+1)*pipe_args["num_images_per_prompt"]]]
