@@ -90,6 +90,7 @@ export default function App() {
   const [modalKeyInput, setModalKeyInput] = useState('');
   const [isSavingKey, setIsSavingKey] = useState(false);
   const [view, setView] = useState<'generate' | 'gallery'>('generate');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -323,36 +324,44 @@ export default function App() {
     <div className="min-h-screen bg-[#050505] text-zinc-100 font-sans selection:bg-indigo-500/30">
       {/* Header */}
       <header className="border-b border-white/5 bg-black/40 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="lg:hidden p-2 text-zinc-400 hover:text-white transition-colors"
+            >
+              <Sliders className="w-5 h-5" />
+            </button>
             <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight italic">AnimagineIt</h1>
+            <h1 className="text-lg md:text-xl font-bold tracking-tight italic">AnimagineIt</h1>
           </div>
           
           <div className="flex items-center bg-zinc-900/50 p-1 rounded-xl border border-white/5">
             <button 
               onClick={() => setView('generate')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+              className={`px-3 md:px-4 py-1.5 rounded-lg text-[10px] md:text-xs font-bold transition-all flex items-center gap-2 ${
                 view === 'generate' 
                   ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
                   : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Generate
+              <span className="hidden sm:inline">Generate</span>
+              <span className="sm:hidden">Gen</span>
             </button>
             <button 
               onClick={() => setView('gallery')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+              className={`px-3 md:px-4 py-1.5 rounded-lg text-[10px] md:text-xs font-bold transition-all flex items-center gap-2 ${
                 view === 'gallery' 
                   ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' 
                   : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              Gallery
+              <span className="hidden sm:inline">Gallery</span>
+              <span className="sm:hidden">Gal</span>
             </button>
           </div>
 
@@ -366,9 +375,23 @@ export default function App() {
       </header>
 
       {view === 'generate' ? (
-        <main className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-8">
-        {/* Controls Sidebar */}
-        <aside className="space-y-6">
+        <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-8 relative">
+          {/* Controls Sidebar */}
+          <aside className={`
+            lg:relative lg:block lg:space-y-6
+            ${isSidebarOpen 
+              ? 'fixed inset-0 z-40 bg-[#050505] p-6 pt-20 overflow-y-auto' 
+              : 'hidden'}
+          `}>
+            {isSidebarOpen && (
+              <button 
+                onClick={() => setIsSidebarOpen(false)}
+                className="lg:hidden absolute top-6 right-6 p-2 text-zinc-400 hover:text-white"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            )}
+            <div className="space-y-6">
           <section className="space-y-4 bg-zinc-900/40 p-6 rounded-3xl border border-white/5 backdrop-blur-sm">
             <div className="flex items-center gap-2 mb-2">
               <Tags className="w-4 h-4 text-indigo-400" />
@@ -650,10 +673,11 @@ export default function App() {
               )}
             </button>
           </section>
+          </div>
         </aside>
 
         {/* Preview Area */}
-        <div className="relative min-h-[600px] bg-zinc-900/20 rounded-[2.5rem] border border-white/5 overflow-hidden flex flex-col items-center justify-center p-8 backdrop-blur-sm">
+        <div className="relative min-h-[400px] md:min-h-[600px] bg-zinc-900/20 rounded-3xl md:rounded-[2.5rem] border border-white/5 overflow-hidden flex flex-col items-center justify-center p-4 md:p-8 backdrop-blur-sm">
           {/* Decorative background elements */}
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-20">
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/20 blur-[120px] rounded-full" />
@@ -765,10 +789,10 @@ export default function App() {
         </div>
       </main>
       ) : (
-        <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-8">
           {/* Search Section */}
           <section className="space-y-4">
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
                 <input 
@@ -777,27 +801,29 @@ export default function App() {
                   value={galleryFilters.prompt}
                   onChange={(e) => setGalleryFilters({ ...galleryFilters, prompt: e.target.value })}
                   onKeyDown={(e) => e.key === 'Enter' && fetchGallery()}
-                  className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-indigo-500/50 transition-all"
+                  className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl py-3 md:py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-indigo-500/50 transition-all"
                 />
               </div>
-              <button 
-                onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-                className={`px-6 rounded-2xl border transition-all flex items-center gap-2 text-sm font-medium ${
-                  showAdvancedSearch 
-                    ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' 
-                    : 'bg-zinc-900/50 border-white/10 text-zinc-400 hover:bg-zinc-800'
-                }`}
-              >
-                <Filter className="w-4 h-4" />
-                Advanced
-                {showAdvancedSearch ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </button>
-              <button 
-                onClick={fetchGallery}
-                className="px-8 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-500/20"
-              >
-                Search
-              </button>
+              <div className="flex gap-3 md:gap-4">
+                <button 
+                  onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+                  className={`flex-1 sm:flex-none px-4 md:px-6 py-3 md:py-0 rounded-2xl border transition-all flex items-center justify-center gap-2 text-sm font-medium ${
+                    showAdvancedSearch 
+                      ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' 
+                      : 'bg-zinc-900/50 border-white/10 text-zinc-400 hover:bg-zinc-800'
+                  }`}
+                >
+                  <Filter className="w-4 h-4" />
+                  <span className="hidden xs:inline">Advanced</span>
+                  {showAdvancedSearch ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+                <button 
+                  onClick={fetchGallery}
+                  className="flex-1 sm:flex-none px-6 md:px-8 py-3 md:py-0 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl transition-all shadow-lg shadow-indigo-500/20"
+                >
+                  Search
+                </button>
+              </div>
             </div>
 
             <AnimatePresence>
