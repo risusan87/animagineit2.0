@@ -32,7 +32,9 @@ interface GenerationParams {
   num_images_per_prompt: number;
   iterations: number;
   seed: string;
-  aspect_ratio: "1:1" | "3:4" | "4:3" | "9:16" | "16:9";
+  aspect_ratio: "1:1" | "3:4" | "4:3" | "9:16" | "16:9" | "custom";
+  width: number;
+  height: number;
   scheduler: string;
   mode: 'single' | 'multiple';
 }
@@ -57,6 +59,8 @@ export default function App() {
       iterations: 1,
       seed: Math.floor(Math.random() * 1000000).toString(),
       aspect_ratio: '1:1' as const,
+      width: 1024,
+      height: 1024,
       scheduler: 'euler_ancestral',
       mode: 'single' as const,
     };
@@ -198,6 +202,8 @@ export default function App() {
           guidance_scale: params.guidance_scale,
           num_images_per_prompt: params.mode === 'single' ? 1 : params.num_images_per_prompt,
           scheduler: params.scheduler,
+          width: params.width,
+          height: params.height,
           images: params.mode === 'single' ? 1 : params.iterations,
           seed: params.mode === 'single' ? (params.seed === '' ? 0 : BigInt(params.seed).toString()) : -1
         }),
@@ -217,7 +223,9 @@ export default function App() {
           num_inference_steps: params.num_inference_steps,
           guidance_scale: params.guidance_scale,
           seed: params.seed,
-          scheduler: params.scheduler
+          scheduler: params.scheduler,
+          width: params.width,
+          height: params.height
         }));
         setGeneratedImages(formatted);
       } else if (data.images && Array.isArray(data.images) && data.images.length > 0) {
@@ -228,7 +236,9 @@ export default function App() {
           num_inference_steps: params.num_inference_steps,
           guidance_scale: params.guidance_scale,
           seed: params.seed,
-          scheduler: params.scheduler
+          scheduler: params.scheduler,
+          width: params.width,
+          height: params.height
         }));
         setGeneratedImages(formatted);
       } else {
@@ -414,7 +424,14 @@ export default function App() {
                 {(["1:1", "3:4", "4:3", "9:16", "16:9"] as const).map((ratio) => (
                   <button
                     key={ratio}
-                    onClick={() => setParams({ ...params, aspect_ratio: ratio })}
+                    onClick={() => {
+                      let w = 1024, h = 1024;
+                      if (ratio === "3:4") { w = 896; h = 1152; }
+                      else if (ratio === "4:3") { w = 1152; h = 896; }
+                      else if (ratio === "9:16") { w = 832; h = 1216; }
+                      else if (ratio === "16:9") { w = 1216; h = 832; }
+                      setParams({ ...params, aspect_ratio: ratio, width: w, height: h });
+                    }}
                     className={`py-2 text-[10px] font-bold rounded-lg border transition-all ${
                       params.aspect_ratio === ratio 
                         ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' 
@@ -424,6 +441,35 @@ export default function App() {
                     {ratio}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-medium text-zinc-400">Width</label>
+                  <span className="text-[10px] font-mono text-indigo-400">{params.width}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="512" max="2048" step="64"
+                  value={params.width}
+                  onChange={(e) => setParams({ ...params, width: parseInt(e.target.value), aspect_ratio: 'custom' })}
+                  className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                />
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-medium text-zinc-400">Height</label>
+                  <span className="text-[10px] font-mono text-indigo-400">{params.height}</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="512" max="2048" step="64"
+                  value={params.height}
+                  onChange={(e) => setParams({ ...params, height: parseInt(e.target.value), aspect_ratio: 'custom' })}
+                  className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                />
               </div>
             </div>
 
@@ -1006,6 +1052,14 @@ export default function App() {
                     <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Scale</h4>
                     <p className="text-[10px] font-mono text-indigo-400">
                       {generatedImages[selectedImageIndex].guidance_scale || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Dimensions</h4>
+                    <p className="text-[10px] font-mono text-indigo-400">
+                      {generatedImages[selectedImageIndex].width && generatedImages[selectedImageIndex].height 
+                        ? `${generatedImages[selectedImageIndex].width} × ${generatedImages[selectedImageIndex].height}`
+                        : 'N/A'}
                     </p>
                   </div>
                 </div>
